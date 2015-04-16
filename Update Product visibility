@@ -1,0 +1,40 @@
+<?php
+error_reporting(E_ALL | E_STRICT);
+require_once('app/Mage.php'); //Path to Magento
+error_reporting(E_ALL | E_STRICT);
+umask(0);
+Mage::app();
+
+$ids_update = array();
+$attributes = array('visibility'=>Mage_Catalog_Model_Product_Visibility::VISIBILITY_NOT_VISIBLE);
+$storeId = Mage::app()->getStore()->getStoreId();
+echo "Store ID : ".$storeId."<br/>";
+
+/** Select Product **/
+$_productCollection1 = Mage::getResourceModel('catalog/product_collection')
+            ->addAttributeToSelect('*')
+			->addAttributeToFilter('entity_id', array(
+				'from' => 800,
+				'to' => 1200,
+				))
+            ->addAttributeToFilter('type_id','configurable'); 
+					
+
+foreach ($_productCollection1 as $product1) {
+    echo "<br/> ---------------------------------------- <br/>";
+	echo $product1->getName();  
+	echo '  -  Visibility: '.$product1->getVisibility()."<br/>";
+	
+	$childProducts = Mage::getModel('catalog/product_type_configurable')->getUsedProducts(null,$product1);   
+	echo "Child products : <br/>";
+	foreach($childProducts as $child) {
+		$ids_update[] = $child->getId();
+		echo $child->getId().'-'.$child->getName();
+		echo '  -  Visibility: '.$child->getVisibility()."<br/>";
+	}
+}
+
+if(isset($_GET['update']) && $_GET['update'] == 1) { // If set this we will updated visibility of ids product.
+	Mage::getSingleton('catalog/product_action')->updateAttributes($ids_update, $attributes, $storeId);
+	echo "<br/><br/> --- Updated ---</br/>";
+}
